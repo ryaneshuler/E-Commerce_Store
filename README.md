@@ -1,73 +1,103 @@
-# React + TypeScript + Vite
+# Not Fake Store
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple front-end e-commerce application built with `React`, `TypeScript`, and `Vite`. The app pulls live product data from the `DummyJSON` API, lets users filter the catalog, manage a cart with Redux, and complete a simulated checkout flow.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Browse a product catalog fetched from `https://dummyjson.com`
+- Filter by:
+  - category
+  - minimum and maximum price
+  - minimum review rating
+- Add custom quantities to the cart from each product card
+- View a live cart count in the header
+- Update item quantities or remove products from the cart
+- Simulate checkout with a success message and cart reset
+- Persist cart items in `sessionStorage` for the current browser session
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `React 19`
+- `TypeScript`
+- `Vite`
+- `Redux Toolkit`
+- `React Redux`
+- `TanStack React Query`
+- Plain `CSS`
 
-## Expanding the ESLint configuration
+## 🚀 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Make sure you have installed:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- `Node.js` (recommended: v18 or newer)
+- `npm`
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Installation
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Run the app locally
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Then open the local URL shown in the terminal, usually:
+
+```text
+http://localhost:5173
+```
+
+## 📜 Available Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Starts the Vite development server |
+| `npm run build` | Builds the app for production |
+| `npm run preview` | Previews the production build locally |
+| `npm run lint` | Runs ESLint across the project |
+
+## 📁 Project Structure
+
+```text
+src/
+├── components/
+│   ├── Home.tsx       # Product listing, filters, and add-to-cart UI
+│   ├── Cart.tsx       # Cart page and checkout flow
+│   └── Cart.css       # Cart styling
+├── redux/
+│   ├── cartSlice.ts   # Cart state and reducers
+│   └── store.ts       # Redux store configuration
+├── App.tsx            # Top-level page switching
+├── App.css            # Main storefront styling
+├── main.tsx           # App entry with Redux and React Query providers
+└── index.css          # Global styles
+```
+
+## ⚙️ How It Works
+
+- `Home.tsx` uses `React Query` to fetch products and categories from the API.
+- Filters are applied client-side for price range and review rating.
+- `cartSlice.ts` manages cart actions such as add, remove, update quantity, and clear cart.
+- Cart data is saved to `sessionStorage`, so it stays available until the browser session ends.
+- `Cart.tsx` calculates totals and handles the demo checkout experience.
+
+## ⚠️ Notes
+
+- This project is a **front-end demo** and does not include a real backend, login system, or payment processing.
+- Checkout is simulated for UI/UX practice.
+- Product availability depends on the external `DummyJSON` API.
+
+## 📚 Learning Goals
+
+This project demonstrates:
+
+- API data fetching with `React Query`
+- global state management with `Redux Toolkit`
+- cart logic in a React app
+- filtering and rendering dynamic product data
+- building a clean, responsive storefront UI
