@@ -23,6 +23,11 @@
   color: #334155;
 }
 
+.cart-note {
+  margin: 0 0 1rem;
+  color: #475569;
+}
+
 .checkout-success {
   text-align: center;
   padding: 3rem 1rem;
@@ -165,6 +170,130 @@
 
 .checkout-button:hover {
   background: #1447cc;
+}
+
+.secondary-action-button {
+  margin-top: 1rem;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #dbeafe;
+  cursor: pointer;
+}
+
+.secondary-action-button:hover {
+  background: #bfdbfe;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.order-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #d9dce3;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(20, 33, 61, 0.08);
+}
+
+.order-card-clickable {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.order-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(20, 33, 61, 0.12);
+}
+
+.order-card-clickable:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.order-card-header h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.order-meta {
+  margin: 0;
+  color: #64748b;
+}
+
+.order-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  color: #166534;
+  background: #dcfce7;
+}
+
+.order-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.order-product-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #334155;
+}
+
+.order-product-list li + li {
+  margin-top: 0.35rem;
+}
+
+.order-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.order-item-card {
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.order-item-image {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f5f7fb;
+}
+
+.order-item h3,
+.order-item p {
+  margin: 0;
+}
+
+.order-summary {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {

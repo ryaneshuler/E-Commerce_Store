@@ -1,13 +1,25 @@
 import { useMemo, useState } from 'react'
+import type { User } from 'firebase/auth'
+import { useQueryClient } from '@tanstack/react-query'
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from '../redux/store'
 import { removeFromCart, updateQuantity, clearCart } from '../redux/cartSlice'
+import { createOrderFromCart, deleteCartItem, saveCartItem } from '../services/cartStorage'
 import './Cart.css'
 
-function Cart() {
+type CartProps = {
+  currentUser: User | null
+  onViewOrders?: () => void
+}
+
+function Cart({ currentUser, onViewOrders }: CartProps) {
   const dispatch = useDispatch()
+  const queryClient = useQueryClient()
   const cartItems = useSelector((state: RootState) => state.cart.items)
   const [checkoutSuccess, setCheckoutSuccess] = useState(false)
+  const [checkoutMessage, setCheckoutMessage] = useState('')
+  const [error, setError] = useState('')
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
 
   const { totalItems, totalPrice } = useMemo(() => {
     return {
@@ -16,26 +28,79 @@ function Cart() {
     }
   }, [cartItems])
 
-  const handleRemoveItem = (id: number) => {
+  const handleRemoveItem = async (id: string) => {
     dispatch(removeFromCart(id))
-  }
 
-  const handleQuantityChange = (id: number, quantity: number) => {
-    if (quantity > 0) {
-      dispatch(updateQuantity({ id, quantity }))
+    if (currentUser) {
+      try {
+        await deleteCartItem(currentUser.uid, id)
+      } catch (removeError: unknown) {
+        setError(
+          removeError instanceof Error ? removeError.message : 'Could not update your cart.',
+        )
+      }
     }
   }
 
-  const handleCheckout = () => {
-    dispatch(clearCart())
-    setCheckoutSuccess(true)
-    setTimeout(() => setCheckoutSuccess(false), 3000)
+  const handleQuantityChange = async (id: string, quantity: number) => {
+    if (quantity <= 0) {
+      return
+    }
+
+    dispatch(updateQuantity({ id, quantity }))
+
+    if (currentUser) {
+      const item = cartItems.find((cartItem) => cartItem.id === id)
+
+      if (item) {
+        try {
+          await saveCartItem(currentUser.uid, {
+            ...item,
+            quantity,
+          })
+        } catch (updateError: unknown) {
+          setError(
+            updateError instanceof Error ? updateError.message : 'Could not sync your cart.',
+          )
+        }
+      }
+    }
+  }
+
+  const handleCheckout = async () => {
+    try {
+      setError('')
+      setIsCheckingOut(true)
+
+      if (currentUser) {
+        await createOrderFromCart(currentUser.uid, currentUser.email ?? '', cartItems)
+        await queryClient.invalidateQueries({ queryKey: ['orders', currentUser.uid] })
+        setCheckoutMessage('Your order was placed and saved to Firestore.')
+      } else {
+        setCheckoutMessage('Your order was placed locally. Sign in next time to save order history.')
+      }
+
+      dispatch(clearCart())
+      setCheckoutSuccess(true)
+      setTimeout(() => setCheckoutSuccess(false), 3000)
+    } catch (checkoutError: unknown) {
+      setError(
+        checkoutError instanceof Error
+          ? checkoutError.message
+          : 'Could not complete checkout right now.',
+      )
+    } finally {
+      setIsCheckingOut(false)
+    }
   }
 
   if (cartItems.length === 0 && !checkoutSuccess) {
     return (
       <div className="cart-container">
         <h1>Shopping Cart</h1>
+        {!currentUser && (
+          <p className="cart-note">Sign in to sync your cart and save order history in Firestore.</p>
+        )}
         <div className="cart-empty">
           <p>Your cart is empty</p>
         </div>
@@ -49,8 +114,13 @@ function Cart() {
         <h1>Shopping Cart</h1>
         <div className="checkout-success">
           <h2>✓ Checkout Successful!</h2>
-          <p>Your order has been placed successfully.</p>
+          <p>{checkoutMessage}</p>
           <p>Your cart has been cleared.</p>
+          {currentUser && onViewOrders && (
+            <button className="secondary-action-button" onClick={onViewOrders}>
+              View order history
+            </button>
+          )}
         </div>
       </div>
     )
@@ -59,6 +129,10 @@ function Cart() {
   return (
     <div className="cart-container">
       <h1>Shopping Cart</h1>
+      {!currentUser && (
+        <p className="cart-note">Sign in to sync your cart and save order history in Firestore.</p>
+      )}
+      {error && <p className="auth-message auth-error">{error}</p>}
 
       <div className="cart-items">
         {cartItems.map((item) => (
@@ -77,7 +151,7 @@ function Cart() {
                 type="number"
                 min="1"
                 value={item.quantity}
-                onChange={(e) => handleQuantityChange(item.id, Number(e.target.value))}
+                onChange={(event) => handleQuantityChange(item.id, Number(event.target.value))}
               />
               <p className="cart-item-subtotal">
                 Subtotal: ${(item.price * item.quantity).toFixed(2)}
@@ -104,8 +178,8 @@ function Cart() {
           <span>Total Price:</span>
           <strong>${totalPrice.toFixed(2)}</strong>
         </div>
-        <button className="checkout-button" onClick={handleCheckout}>
-          Proceed to Checkout
+        <button className="checkout-button" onClick={handleCheckout} disabled={isCheckingOut}>
+          {isCheckingOut ? 'Processing checkout...' : 'Proceed to Checkout'}
         </button>
       </div>
     </div>

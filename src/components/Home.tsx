@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
+import type { User } from 'firebase/auth'
 import { useQuery } from '@tanstack/react-query'
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from '../redux/store'
 import { addToCart } from '../redux/cartSlice'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { db } from '../firebaseConfig'
+import { saveCartItem } from '../services/cartStorage'
 
 type Product = {
-  id: number
+  id: string
   title: string
   price: number
   description: string
@@ -17,80 +21,80 @@ type Product = {
   }
 }
 
-type DummyJsonProduct = {
-  id: number
-  title: string
-  price: number
-  description: string
-  category: string
-  thumbnail: string
-  rating: number
-  stock: number
-}
-
-type DummyJsonCategory = {
+type CategoryOption = {
   slug: string
   name: string
-  url: string
 }
 
-type DummyJsonResponse = {
-  products: DummyJsonProduct[]
-}
-
-const mapProducts = (products: DummyJsonProduct[]): Product[] => {
-  return products.map((product) => ({
-    id: product.id,
-    title: product.title,
-    price: product.price,
-    description: product.description,
-    category: product.category,
-    image: product.thumbnail,
-    rating: {
-      rate: product.rating,
-      count: product.stock,
-    },
-  }))
-}
+const formatCategoryName = (value: string) =>
+  value
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase())
 
 const getProducts = async (category: string): Promise<Product[]> => {
-  const endpoint =
+  const productsRef = collection(db, 'products')
+  const productsQuery =
     category === 'all'
-      ? 'https://dummyjson.com/products?limit=100'
-      : `https://dummyjson.com/products/category/${encodeURIComponent(category)}?limit=100`
+      ? query(productsRef)
+      : query(productsRef, where('category', '==', category))
 
-  const response = await fetch(endpoint)
+  const snapshot = await getDocs(productsQuery)
 
-  if (!response.ok) {
-    throw new Error('Could not fetch products. Please try again.')
-  }
+  return snapshot.docs.map((productDoc) => {
+    const data = productDoc.data()
+    const rawRating = data.rating
+    const rate =
+      typeof rawRating === 'number' ? Number(rawRating) : Number(rawRating?.rate ?? 0)
+    const count =
+      typeof rawRating === 'number' ? 1 : Number(rawRating?.count ?? 0)
 
-  const data: DummyJsonResponse = await response.json()
-  return mapProducts(data.products)
+    return {
+      id: productDoc.id,
+      title: data.title ?? 'Untitled product',
+      price: Number(data.price ?? 0),
+      description: data.description ?? 'No description available.',
+      category: data.category ?? 'uncategorized',
+      image: data.image ?? 'https://via.placeholder.com/300x300?text=No+Image',
+      rating: {
+        rate,
+        count,
+      },
+    }
+  })
 }
 
-const getCategories = async (): Promise<DummyJsonCategory[]> => {
-  const response = await fetch('https://dummyjson.com/products/categories')
+const getCategories = async (): Promise<CategoryOption[]> => {
+  const snapshot = await getDocs(collection(db, 'products'))
+  const categories = new Map<string, CategoryOption>()
 
-  if (!response.ok) {
-    throw new Error('Could not fetch categories. Please try again.')
-  }
+  snapshot.docs.forEach((productDoc) => {
+    const category = productDoc.data().category
 
-  return response.json()
+    if (typeof category === 'string' && category.trim() !== '' && !categories.has(category)) {
+      categories.set(category, {
+        slug: category,
+        name: formatCategoryName(category),
+      })
+    }
+  })
+
+  return Array.from(categories.values()).sort((left, right) => left.name.localeCompare(right.name))
 }
 
 type HomeProps = {
   onOpenCart: () => void
+  onSelectProduct: (productId: string) => void
+  currentUser: User | null
 }
 
-function Home({ onOpenCart }: HomeProps) {
+function Home({ onOpenCart, onSelectProduct, currentUser }: HomeProps) {
   const dispatch = useDispatch()
   const cartItems = useSelector((state: RootState) => state.cart.items)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [minRating, setMinRating] = useState(0)
-  const [quantityByProduct, setQuantityByProduct] = useState<Record<number, number>>({})
+  const [quantityByProduct, setQuantityByProduct] = useState<Record<string, number>>({})
 
   const {
     data: products = [],
@@ -130,6 +134,8 @@ function Home({ onOpenCart }: HomeProps) {
 
   const handleAddToCart = (product: Product) => {
     const quantity = quantityByProduct[product.id] ?? 1
+    const existingQuantity = cartItems.find((item) => item.id === product.id)?.quantity ?? 0
+    const nextQuantity = existingQuantity + quantity
 
     dispatch(
       addToCart({
@@ -140,9 +146,19 @@ function Home({ onOpenCart }: HomeProps) {
         quantity,
       }),
     )
+
+    if (currentUser) {
+      void saveCartItem(currentUser.uid, {
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image: product.image,
+        quantity: nextQuantity,
+      })
+    }
   }
 
-  const handleQuantityChange = (productId: number, quantity: number) => {
+  const handleQuantityChange = (productId: string, quantity: number) => {
     setQuantityByProduct((current) => ({
       ...current,
       [productId]: quantity,
@@ -161,10 +177,6 @@ function Home({ onOpenCart }: HomeProps) {
       <header className="store-header">
         <button className="store-title-button" onClick={resetFilters}>
           Not Fake Store
-        </button>
-        <button className="header-cart-button" onClick={onOpenCart}>
-          Cart
-          {cartItemCount > 0 && <span className="header-cart-count">{cartItemCount}</span>}
         </button>
       </header>
 
@@ -243,20 +255,40 @@ function Home({ onOpenCart }: HomeProps) {
           ) : (
             <div className="products-grid">
               {filteredProducts.map((product) => (
-                <article className="product-card" key={product.id}>
+                <article
+                  className="product-card"
+                  key={product.id}
+                  onClick={() => onSelectProduct(product.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      onSelectProduct(product.id)
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <img src={product.image} alt={product.title} className="product-image" />
                   <h2>{product.title}</h2>
                   <p className="category">Category: {product.category}</p>
                   <p className="description">{product.description}</p>
                   <p className="price">Price: ${product.price.toFixed(2)}</p>
-                  <p className="rate">Reviews: {product.rating.rate} / 5</p>
-                  <label className="quantity-label" htmlFor={`quantity-${product.id}`}>
+                  <p className="rate">
+                    Rating: {product.rating.rate.toFixed(1)} / 5 ({product.rating.count} review
+                    {product.rating.count === 1 ? '' : 's'})
+                  </p>
+                  <label
+                    className="quantity-label"
+                    htmlFor={`quantity-${product.id}`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     Quantity:
                   </label>
                   <select
                     id={`quantity-${product.id}`}
                     className="quantity-select"
                     value={quantityByProduct[product.id] ?? 1}
+                    onClick={(event) => event.stopPropagation()}
                     onChange={(event) =>
                       handleQuantityChange(product.id, Number(event.target.value))
                     }
@@ -267,7 +299,12 @@ function Home({ onOpenCart }: HomeProps) {
                       </option>
                     ))}
                   </select>
-                  <button onClick={() => handleAddToCart(product)}>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      handleAddToCart(product)
+                    }}
+                  >
                     Add to cart ({quantityByProduct[product.id] ?? 1})
                   </button>
                 </article>

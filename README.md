@@ -1,37 +1,60 @@
-# Not Fake Store
+# E-Commerce Store
 
-A simple front-end e-commerce application built with `React`, `TypeScript`, and `Vite`. The app pulls live product data from the `DummyJSON` API, lets users filter the catalog, manage a cart with Redux, and complete a simulated checkout flow.
+A Firebase-powered storefront built with `React`, `TypeScript`, and `Vite`. This project supports user authentication, Firestore-backed product management, profile editing, cart syncing, and order history in a single-page shopping experience.
 
 ## ✨ Features
 
-- Browse a product catalog fetched from `https://dummyjson.com`
-- Filter by:
-  - category
-  - minimum and maximum price
-  - minimum review rating
-- Add custom quantities to the cart from each product card
-- View a live cart count in the header
-- Update item quantities or remove products from the cart
-- Simulate checkout with a success message and cart reset
-- Persist cart items in `sessionStorage` for the current browser session
+### Shopper Experience
+- Browse products stored in Firestore
+- Filter products by category, price range, and rating
+- Add items to the cart with adjustable quantities
+- See a live cart count in the navigation bar
+- Complete a simulated checkout flow that saves orders to Firestore
+- View past orders and open a detailed order summary page
+
+### Account Features
+- Register and log in with **Firebase Authentication**
+- Show a personalized `Hi, {name}` profile button when signed in
+- Create, read, update, and delete user profile data
+- Delete an account and remove nested Firestore user data
+
+### Product Management
+- Create new products from inside the app
+- Open a product details page by clicking a product card
+- Edit or delete products from the product details view
 
 ## 🛠️ Tech Stack
 
-- `React 19`
-- `TypeScript`
-- `Vite`
-- `Redux Toolkit`
-- `React Redux`
-- `TanStack React Query`
-- Plain `CSS`
+| Tool | Purpose |
+| --- | --- |
+| `React 19` | UI components |
+| `TypeScript` | Type-safe development |
+| `Vite` | Development server and build tooling |
+| `Firebase Auth` | Registration, login, logout, account management |
+| `Cloud Firestore` | Products, user profiles, carts, and orders |
+| `Redux Toolkit` | Cart state management |
+| `React Redux` | Redux bindings for React |
+| `TanStack React Query` | Data fetching and cache invalidation |
+| `CSS` | Styling and layout |
+
+## 📄 Main Pages
+
+- `Home` — product catalog, filters, and add-to-cart controls
+- `Login` / `Register` — Firebase email/password authentication
+- `Profile` — update personal info and view recent orders
+- `Cart` — review items, change quantity, remove items, and checkout
+- `Orders` — order history overview
+- `Order Details` — full breakdown for a selected order
+- `Add Product` — create a new product in Firestore
+- `Product Details` — view, edit, or delete a product
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-Make sure you have installed:
+Install the following first:
 
-- `Node.js` (recommended: v18 or newer)
+- `Node.js` (recommended: v18+)
 - `npm`
 
 ### Installation
@@ -46,58 +69,92 @@ npm install
 npm run dev
 ```
 
-Then open the local URL shown in the terminal, usually:
+Then open the local Vite URL, usually:
 
 ```text
 http://localhost:5173
+```
+
+## 🔥 Firebase Setup
+
+This project depends on Firebase and Firestore being configured correctly.
+
+### Firebase Console Checklist
+
+1. Create a Firebase project.
+2. Add a **Web App** to that project.
+3. Enable **Authentication** and turn on the **Email/Password** sign-in provider.
+4. Create a **Firestore Database**.
+5. Confirm the app values in `src/firebaseConfig.ts` match your Firebase project.
+6. Make sure your Firestore security rules allow the reads and writes needed for this app.
+
+> A `.env.example` file is included as a reference, but the current app configuration is defined in `src/firebaseConfig.ts`.
+
+### Suggested Firestore Collections
+
+```text
+products/
+users/{uid}
+users/{uid}/cart
+users/{uid}/orders
 ```
 
 ## 📜 Available Scripts
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Starts the Vite development server |
-| `npm run build` | Builds the app for production |
-| `npm run preview` | Previews the production build locally |
-| `npm run lint` | Runs ESLint across the project |
+| `npm run dev` | Start the Vite development server |
+| `npm run build` | Build the app for production |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run ESLint |
 
 ## 📁 Project Structure
 
 ```text
 src/
 ├── components/
-│   ├── Home.tsx       # Product listing, filters, and add-to-cart UI
-│   ├── Cart.tsx       # Cart page and checkout flow
-│   └── Cart.css       # Cart styling
+│   ├── Home.tsx
+│   ├── Cart.tsx
+│   ├── Login.tsx
+│   ├── Register.tsx
+│   ├── Profile.tsx
+│   ├── CreateProduct.tsx
+│   ├── ProductDetails.tsx
+│   ├── Orders.tsx
+│   └── OrderDetails.tsx
 ├── redux/
-│   ├── cartSlice.ts   # Cart state and reducers
-│   └── store.ts       # Redux store configuration
-├── App.tsx            # Top-level page switching
-├── App.css            # Main storefront styling
-├── main.tsx           # App entry with Redux and React Query providers
-└── index.css          # Global styles
+│   ├── cartSlice.ts
+│   └── store.ts
+├── services/
+│   ├── cartStorage.ts
+│   └── userProfile.ts
+├── firebaseConfig.ts
+├── App.tsx
+├── App.css
+├── main.tsx
+└── index.css
 ```
 
-## ⚙️ How It Works
+## ⚙️ App Behavior
 
-- `Home.tsx` uses `React Query` to fetch products and categories from the API.
-- Filters are applied client-side for price range and review rating.
-- `cartSlice.ts` manages cart actions such as add, remove, update quantity, and clear cart.
-- Cart data is saved to `sessionStorage`, so it stays available until the browser session ends.
-- `Cart.tsx` calculates totals and handles the demo checkout experience.
+- Product data is stored in **Firestore** instead of an external demo API.
+- Signed-in users have cart items and orders saved under their Firebase user document.
+- Redux manages the active cart in the UI, while Firestore provides longer-term persistence.
+- Recent orders are surfaced on the profile page for quick access.
+- Navigation updates automatically depending on whether the user is logged in.
 
 ## ⚠️ Notes
 
-- This project is a **front-end demo** and does not include a real backend, login system, or payment processing.
-- Checkout is simulated for UI/UX practice.
-- Product availability depends on the external `DummyJSON` API.
+- Checkout is **simulated** and does not process real payments.
+- Navigation is handled with component state in `App.tsx` rather than `React Router`.
+- Some Firebase setup must still be completed manually in the Firebase Console.
 
 ## 📚 Learning Goals
 
 This project demonstrates:
 
-- API data fetching with `React Query`
-- global state management with `Redux Toolkit`
-- cart logic in a React app
-- filtering and rendering dynamic product data
-- building a clean, responsive storefront UI
+- Firebase Authentication in a React app
+- Firestore CRUD for users, products, carts, and orders
+- global state management with Redux Toolkit
+- query-based data fetching with React Query
+- building a polished single-page storefront UI
