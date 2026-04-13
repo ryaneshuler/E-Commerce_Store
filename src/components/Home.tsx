@@ -87,7 +87,7 @@ type HomeProps = {
   currentUser: User | null
 }
 
-function Home({ onOpenCart, onSelectProduct, currentUser }: HomeProps) {
+function Home({ onSelectProduct, currentUser }: HomeProps) {
   const dispatch = useDispatch()
   const cartItems = useSelector((state: RootState) => state.cart.items)
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -114,11 +114,6 @@ function Home({ onOpenCart, onSelectProduct, currentUser }: HomeProps) {
     queryKey: ['categories'],
     queryFn: getCategories,
   })
-
-  const cartItemCount = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
-    [cartItems],
-  )
 
   const filteredProducts = useMemo(() => {
     const min = minPrice === '' ? undefined : Number(minPrice)
