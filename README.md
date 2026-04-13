@@ -1,5 +1,7 @@
 # E-Commerce Store
 
+**Live app:** [https://e-commerce-store-delta-ruddy.vercel.app/](https://e-commerce-store-delta-ruddy.vercel.app/)
+
 A Firebase-powered storefront built with `React`, `TypeScript`, and `Vite`. This project supports user authentication, Firestore-backed product management, profile editing, cart syncing, and order history in a single-page shopping experience.
 
 ## ✨ Features
@@ -35,6 +37,8 @@ A Firebase-powered storefront built with `React`, `TypeScript`, and `Vite`. This
 | `Redux Toolkit` | Cart state management |
 | `React Redux` | Redux bindings for React |
 | `TanStack React Query` | Data fetching and cache invalidation |
+| `Jest` | Unit and integration testing |
+| `React Testing Library` | Component rendering and user interaction testing |
 | `CSS` | Styling and layout |
 
 ## 📄 Main Pages
@@ -107,6 +111,8 @@ users/{uid}/orders
 | `npm run build` | Build the app for production |
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | Run ESLint |
+| `npm test` | Run the Jest test suite once |
+| `npm run test:watch` | Run Jest in interactive watch mode |
 
 ## 📁 Project Structure
 
@@ -114,9 +120,12 @@ users/{uid}/orders
 src/
 ├── components/
 │   ├── Home.tsx
+│   ├── Home.integration.test.tsx
 │   ├── Cart.tsx
 │   ├── Login.tsx
+│   ├── Login.test.tsx
 │   ├── Register.tsx
+│   ├── Register.test.tsx
 │   ├── Profile.tsx
 │   ├── CreateProduct.tsx
 │   ├── ProductDetails.tsx
@@ -128,6 +137,8 @@ src/
 ├── services/
 │   ├── cartStorage.ts
 │   └── userProfile.ts
+├── test/
+│   └── setup.ts
 ├── firebaseConfig.ts
 ├── App.tsx
 ├── App.css
@@ -158,3 +169,56 @@ This project demonstrates:
 - global state management with Redux Toolkit
 - query-based data fetching with React Query
 - building a polished single-page storefront UI
+- Test-Driven Development with Jest and React Testing Library
+- CI/CD automation via GitHub Actions with deployment to Vercel
+
+## 🧪 Testing
+
+The project uses **Jest** with **React Testing Library** for unit and integration tests.
+
+### Unit Tests
+
+Two component unit test suites cover rendering, state changes, and user interactions:
+
+- `Login.test.tsx` — tests form rendering, button interactions, successful login flow, and form reset
+- `Register.test.tsx` — tests password mismatch validation, successful registration flow, Firestore profile creation, and form reset
+
+### Integration Test
+
+- `Home.integration.test.tsx` — renders Home with the real Redux store and React Query provider, mocks Firestore product data, simulates quantity selection and add-to-cart clicks, and asserts that the cart UI and Redux state update correctly
+
+### Running Tests
+
+```bash
+npm test
+```
+
+## 🔄 CI/CD
+
+A GitHub Actions workflow is defined in `.github/workflows/main.yml`.
+
+### Continuous Integration (CI)
+
+Triggers on every push and pull request to `main`:
+
+1. Checks out the code
+2. Installs dependencies with `npm ci`
+3. Runs ESLint
+4. Runs Jest — fails the workflow if any test fails
+5. Runs the production build
+
+### Continuous Deployment (CD)
+
+Triggers only on direct pushes to `main`, and only after CI passes:
+
+1. Pulls Vercel project settings
+2. Builds with the Vercel CLI
+3. Deploys the pre-built output to Vercel production
+
+Deployment requires three **GitHub repository secrets** to be configured:
+
+| Secret | Where to find it |
+| --- | --- |
+| `VERCEL_TOKEN` | vercel.com → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | vercel.com → Team/Account Settings → General |
+| `VERCEL_PROJECT_ID` | vercel.com → Project → Settings → General |

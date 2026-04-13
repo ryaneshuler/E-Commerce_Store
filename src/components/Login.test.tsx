@@ -1,29 +1,27 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { signInWithEmailAndPassword } from 'firebase/auth'
 import Login from './Login'
 
-const { signInWithEmailAndPassword } = vi.hoisted(() => ({
-  signInWithEmailAndPassword: vi.fn(),
+jest.mock('firebase/auth', () => ({
+  signInWithEmailAndPassword: jest.fn(),
 }))
 
-vi.mock('firebase/auth', () => ({
-  signInWithEmailAndPassword,
-}))
-
-vi.mock('../firebaseConfig', () => ({
+jest.mock('../firebaseConfig', () => ({
   auth: { name: 'mock-auth' },
   isFirebaseConfigured: true,
 }))
 
 describe('Login', () => {
+  const mockSignInWithEmailAndPassword = signInWithEmailAndPassword as jest.Mock
+
   beforeEach(() => {
-    signInWithEmailAndPassword.mockReset()
+    mockSignInWithEmailAndPassword.mockReset()
   })
 
   it('renders the login form and lets the user switch to registration', async () => {
     const user = userEvent.setup()
-    const handleSwitchToRegister = vi.fn()
+    const handleSwitchToRegister = jest.fn()
 
     render(<Login onSwitchToRegister={handleSwitchToRegister} />)
 
@@ -38,9 +36,9 @@ describe('Login', () => {
 
   it('submits credentials, shows a success message, and clears the form', async () => {
     const user = userEvent.setup()
-    const handleLoginSuccess = vi.fn()
+    const handleLoginSuccess = jest.fn()
 
-    signInWithEmailAndPassword.mockResolvedValue({
+    mockSignInWithEmailAndPassword.mockResolvedValue({
       user: {
         email: 'shopper@example.com',
       },
@@ -53,7 +51,7 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: 'Log in' }))
 
     await waitFor(() => {
-      expect(signInWithEmailAndPassword).toHaveBeenCalledWith(
+      expect(mockSignInWithEmailAndPassword).toHaveBeenCalledWith(
         { name: 'mock-auth' },
         'shopper@example.com',
         'super-secret',

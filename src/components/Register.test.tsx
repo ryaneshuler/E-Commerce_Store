@@ -1,35 +1,32 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { createUserProfileDocument } from '../services/userProfile'
 import Register from './Register'
 
-const { createUserWithEmailAndPassword, updateProfile, createUserProfileDocument } = vi.hoisted(
-  () => ({
-    createUserWithEmailAndPassword: vi.fn(),
-    updateProfile: vi.fn(),
-    createUserProfileDocument: vi.fn(),
-  }),
-)
-
-vi.mock('firebase/auth', () => ({
-  createUserWithEmailAndPassword,
-  updateProfile,
+jest.mock('firebase/auth', () => ({
+  createUserWithEmailAndPassword: jest.fn(),
+  updateProfile: jest.fn(),
 }))
 
-vi.mock('../firebaseConfig', () => ({
+jest.mock('../firebaseConfig', () => ({
   auth: { name: 'mock-auth' },
   isFirebaseConfigured: true,
 }))
 
-vi.mock('../services/userProfile', () => ({
-  createUserProfileDocument,
+jest.mock('../services/userProfile', () => ({
+  createUserProfileDocument: jest.fn(),
 }))
 
 describe('Register', () => {
+  const mockCreateUserWithEmailAndPassword = createUserWithEmailAndPassword as jest.Mock
+  const mockUpdateProfile = updateProfile as jest.Mock
+  const mockCreateUserProfileDocument = createUserProfileDocument as jest.Mock
+
   beforeEach(() => {
-    createUserWithEmailAndPassword.mockReset()
-    updateProfile.mockReset()
-    createUserProfileDocument.mockReset()
+    mockCreateUserWithEmailAndPassword.mockReset()
+    mockUpdateProfile.mockReset()
+    mockCreateUserProfileDocument.mockReset()
   })
 
   it('shows a validation error when passwords do not match', async () => {
@@ -44,22 +41,22 @@ describe('Register', () => {
     await user.click(screen.getByRole('button', { name: 'Register' }))
 
     expect(await screen.findByText('Passwords do not match.')).toBeInTheDocument()
-    expect(createUserWithEmailAndPassword).not.toHaveBeenCalled()
-    expect(updateProfile).not.toHaveBeenCalled()
-    expect(createUserProfileDocument).not.toHaveBeenCalled()
+    expect(mockCreateUserWithEmailAndPassword).not.toHaveBeenCalled()
+    expect(mockUpdateProfile).not.toHaveBeenCalled()
+    expect(mockCreateUserProfileDocument).not.toHaveBeenCalled()
   })
 
   it('creates an account, persists the profile, and clears the form on success', async () => {
     const user = userEvent.setup()
-    const handleRegisterSuccess = vi.fn()
+    const handleRegisterSuccess = jest.fn()
     const firebaseUser = {
       uid: 'user-123',
       email: 'casey@example.com',
     }
 
-    createUserWithEmailAndPassword.mockResolvedValue({ user: firebaseUser })
-    updateProfile.mockResolvedValue(undefined)
-    createUserProfileDocument.mockResolvedValue(undefined)
+    mockCreateUserWithEmailAndPassword.mockResolvedValue({ user: firebaseUser })
+    mockUpdateProfile.mockResolvedValue(undefined)
+    mockCreateUserProfileDocument.mockResolvedValue(undefined)
 
     render(<Register onRegisterSuccess={handleRegisterSuccess} />)
 
@@ -71,17 +68,17 @@ describe('Register', () => {
     await user.click(screen.getByRole('button', { name: 'Register' }))
 
     await waitFor(() => {
-      expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
+      expect(mockCreateUserWithEmailAndPassword).toHaveBeenCalledWith(
         { name: 'mock-auth' },
         'casey@example.com',
         'secret1',
       )
     })
 
-    expect(updateProfile).toHaveBeenCalledWith(firebaseUser, {
+    expect(mockUpdateProfile).toHaveBeenCalledWith(firebaseUser, {
       displayName: 'Casey Shopper',
     })
-    expect(createUserProfileDocument).toHaveBeenCalledWith('user-123', {
+    expect(mockCreateUserProfileDocument).toHaveBeenCalledWith('user-123', {
       email: 'casey@example.com',
       name: 'Casey Shopper',
       address: '123 Market St',

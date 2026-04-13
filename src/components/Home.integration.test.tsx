@@ -1,37 +1,27 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { configureStore } from '@reduxjs/toolkit'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 import { Provider, useSelector } from 'react-redux'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { saveCartItem } from '../services/cartStorage'
 import Home from './Home'
 import cartReducer from '../redux/cartSlice'
 import type { RootState } from '../redux/store'
 
-const { collection, getDocs, query, where } = vi.hoisted(() => ({
-  collection: vi.fn(),
-  getDocs: vi.fn(),
-  query: vi.fn(),
-  where: vi.fn(),
+jest.mock('firebase/firestore', () => ({
+  collection: jest.fn(),
+  getDocs: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
 }))
 
-const { saveCartItem } = vi.hoisted(() => ({
-  saveCartItem: vi.fn(),
-}))
-
-vi.mock('firebase/firestore', () => ({
-  collection,
-  getDocs,
-  query,
-  where,
-}))
-
-vi.mock('../firebaseConfig', () => ({
+jest.mock('../firebaseConfig', () => ({
   db: { name: 'mock-db' },
 }))
 
-vi.mock('../services/cartStorage', () => ({
-  saveCartItem,
+jest.mock('../services/cartStorage', () => ({
+  saveCartItem: jest.fn(),
 }))
 
 function CartStatus() {
@@ -61,7 +51,7 @@ function renderHomeIntegration() {
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <CartStatus />
-        <Home currentUser={null} onOpenCart={vi.fn()} onSelectProduct={vi.fn()} />
+        <Home currentUser={null} onOpenCart={jest.fn()} onSelectProduct={jest.fn()} />
       </QueryClientProvider>
     </Provider>,
   )
@@ -70,19 +60,25 @@ function renderHomeIntegration() {
 }
 
 describe('Home integration', () => {
+  const mockCollection = collection as jest.Mock
+  const mockGetDocs = getDocs as jest.Mock
+  const mockQuery = query as jest.Mock
+  const mockWhere = where as jest.Mock
+  const mockSaveCartItem = saveCartItem as jest.Mock
+
   beforeEach(() => {
-    collection.mockImplementation((_db, ...segments) => ({ type: 'collection', segments }))
-    query.mockImplementation((...args) => ({ type: 'query', args }))
-    where.mockImplementation((...args) => ({ type: 'where', args }))
-    getDocs.mockReset()
-    saveCartItem.mockReset()
+    mockCollection.mockImplementation((_db, ...segments) => ({ type: 'collection', segments }))
+    mockQuery.mockImplementation((...args) => ({ type: 'query', args }))
+    mockWhere.mockImplementation((...args) => ({ type: 'where', args }))
+    mockGetDocs.mockReset()
+    mockSaveCartItem.mockReset()
     sessionStorage.clear()
   })
 
   it('updates the cart UI when a shopper adds a product', async () => {
     const user = userEvent.setup()
 
-    getDocs.mockResolvedValue({
+    mockGetDocs.mockResolvedValue({
       docs: [
         {
           id: 'prod-1',
@@ -130,6 +126,6 @@ describe('Home integration', () => {
         quantity: 3,
       },
     ])
-    expect(saveCartItem).not.toHaveBeenCalled()
+    expect(mockSaveCartItem).not.toHaveBeenCalled()
   })
 })

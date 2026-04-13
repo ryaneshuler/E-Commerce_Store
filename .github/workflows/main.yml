@@ -30,7 +30,7 @@ jobs:
         run: npm run lint
 
       - name: Run unit and integration tests
-        # vitest run exits with a non-zero code on any test failure,
+        # Jest exits with a non-zero code on any test failure,
         # which causes GitHub Actions to fail the job automatically.
         run: npm test
 
